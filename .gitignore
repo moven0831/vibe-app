@@ -1,0 +1,6 @@
+target/
+build/
+*.jar
+node_modules/
+.DS_Store
+*.ptau
