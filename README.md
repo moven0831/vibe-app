@@ -3,7 +3,7 @@
 A Flutter mobile app that generates and verifies zero-knowledge proofs for Poseidon hash preimages, powered by [mopro](https://zkmopro.org).
 
 <p align="center">
-  <img src="screenshots/demo.png" alt="App screenshot" width="300" />
+  <img src="screenshots/simulator_screenshot_41FAF09B-C5E1-426E-9EDC-5DDE65721C61.png" alt="App screenshot" width="300" />
 </p>
 
 ## What It Does
