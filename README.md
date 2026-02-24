@@ -1,139 +1,110 @@
-# Mopro example app
+# ZK Hash Preimage Demo
 
-This is the example app of mopro. You can use the following commands to build native bindings for your iOS and/or Android app.
+A Flutter mobile app that generates and verifies zero-knowledge proofs for Poseidon hash preimages, powered by [mopro](https://zkmopro.org).
 
-**📚 To learn more about mopro, visit: https://zkmopro.org**
+<p align="center">
+  <img src="screenshots/demo.png" alt="App screenshot" width="300" />
+</p>
 
-## Getting Started
+## What It Does
 
-To set up and build bindings, follow these steps.
+Prove you know a secret number that hashes to a given Poseidon hash -- without revealing the secret. The app simulates a challenge-response protocol:
 
-### 1. Install the Mopro CLI Tool
+1. Enter a secret number (private input)
+2. A server provides a Poseidon hash challenge (public input)
+3. Generate a Groth16 zero-knowledge proof on-device
+4. Verify the proof locally
 
--   Get published CLI
+The secret never leaves the device. Only the proof is shared.
 
-```sh
-cargo install mopro-cli
+## Architecture
+
+```
+Flutter UI (Dart)
+    |
+    v
+mopro Flutter bindings (flutter_rust_bridge)
+    |
+    v
+Rust FFI (mopro-ffi + UniFFI)
+    |
+    v
+circom-prover (Groth16 / Arkworks)
+    |
+    v
+Poseidon hash preimage circuit (Circom)
 ```
 
--   Or get the latest CLI on GitHub
+## Prerequisites
 
-```sh
-git clone https://github.com/zkmopro/mopro
-cd mopro/cli
-cargo install --path .
-```
+| Tool | Version | Install |
+|------|---------|---------|
+| [mopro-cli](https://zkmopro.org) | latest | `cargo install mopro-cli` |
+| [Rust](https://rustup.rs) | stable | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| [Flutter SDK](https://flutter.dev) | 3.x | [flutter.dev/get-started](https://flutter.dev/docs/get-started/install) |
+| [Node.js](https://nodejs.org) | 18+ | `brew install node` |
+| Xcode (iOS) | 15+ | Mac App Store |
 
-### 2. Initialize adapter
+## Quick Start
 
-Navigate to the Mopro example app directory and initialize setup by running:
+```bash
+# 1. Install circuit dependencies
+cd circuits && npm install && cd ..
 
-```sh
+# 2. Initialize mopro adapters
 mopro init
-```
 
-### 3. Generate Native Bindings
-
-Build bindings for your project by executing:
-
-```sh
+# 3. Build native bindings for Flutter
 mopro build
+
+# 4. Run the app
+cd flutter
+flutter pub get
+flutter run
 ```
 
-### 4. Create Platform-Specific Templates
+> After any Rust code changes, run `mopro build --auto-update` to regenerate bindings.
 
-To generate templates tailored to your target platform, use:
+## Project Structure
 
-```sh
-mopro create
+```
+vibe-app/
+├── circuits/
+│   └── hashpreimage.circom   # Poseidon hash preimage circuit
+├── src/
+│   └── lib.rs                # Rust core: proof generation & verification
+├── flutter/
+│   └── lib/main.dart         # Flutter UI
+├── mopro_flutter_bindings/   # Generated Flutter plugin (flutter_rust_bridge)
+├── test-vectors/             # Circuit zkey and test data
+├── Config.toml               # mopro build configuration
+├── Cargo.toml                # Rust dependencies
+└── build.rs                  # Witness transpilation
 ```
 
-### 5. Open the project
+## How the Demo Works
 
-Follow the instructions to open the development tools
+The circuit (`circuits/hashpreimage.circom`) is simple:
 
-For iOS:
+```circom
+template HashPreimage() {
+    signal input secret;           // private
+    signal input challengeHash;    // public
 
-```sh
-open ios/MoproApp.xcodeproj
-```
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== secret;
 
-For Android:
-
-```sh
-open android -a Android\ Studio
-```
-
-For Web:
-
-```sh
-cd web && yarn && yarn start
-```
-
-For React Native:
-Follow the README in the `react-native` directory. Or [zkmopro/react-native-app/README.md](https://github.com/zkmopro/react-native-app/blob/main/README.md)
-
-For Flutter:
-Follow the README in the `flutter` directory. Or [zkmopro/flutter-app/README.md](https://github.com/zkmopro/flutter-app/blob/main/README.md)
-
-### 6. Update bindings
-
-After creating templates, you may still need to update the bindings.
-
-`mopro build` will prompt you to run `mopro update` to refresh the bindings in each template. You can also run it automatically:
-
-```sh
-mopro build --auto-update
-```
-
-Or manually:
-
-```sh
-mopro update
-```
-
-## Customize Bindings
-
-### UniFFI
-
-For mobile native apps (iOS and Android), you can use `#[uniffi::export]` to define custom functions that will be included in the generated bindings. For example:
-
-```rust
-#[uniffi::export]
-fn mopro_hello_world() -> String {
-    "Hello, World!".to_string()
+    challengeHash === hasher.out;
 }
 ```
 
-After defining your custom functions, run the standard Mopro commands (`mopro build`, `mopro create`, or `mopro update`) to regenerate and update the bindings for each target platform.
+The prover shows it knows `secret` such that `Poseidon(secret) == challengeHash`, without revealing `secret`. The app uses a precomputed lookup table of Poseidon hashes for the demo, but in production the challenge hash would come from a server.
 
-### `wasm_bindgen`
+Proof generation uses the **Arkworks** backend via `circom-prover`, producing a **Groth16** proof that can be verified in ~milliseconds.
 
-For web (WASM) apps, you can use `#[wasm_bindgen]` in [`src/lib.rs`](src/lib.rs) to expose custom functions to JavaScript. For example:
+## Learn More
 
-```rust
-#[cfg_attr(
-    all(feature = "wasm", target_arch = "wasm32"),
-    wasm_bindgen(js_name = "moproWasmHelloWorld")
-)]
-pub fn mopro_wasm_hello_world() -> String {
-    "Hello, World!".to_string()
-}
-```
-
-After running `mopro build`, be sure to run `mopro update` to refresh the bindings in each template. This command automatically finds the appropriate bindings folders and updates them accordingly.
-
-## Test
-
-Run tests before building bindings
-
-```sh
-curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar -o jna-5.13.0.jar
-export CLASSPATH=jna-5.13.0.jar
-cargo test
-```
-
-## Community
-
--   X account: <a href="https://twitter.com/zkmopro"><img src="https://img.shields.io/twitter/follow/zkmopro?style=flat-square&logo=x&label=zkmopro"></a>
--   Telegram group: <a href="https://t.me/zkmopro"><img src="https://img.shields.io/badge/telegram-@zkmopro-blue.svg?style=flat-square&logo=telegram"></a>
+- [mopro documentation](https://zkmopro.org)
+- [mopro GitHub](https://github.com/zkmopro/mopro)
+- [Circom language](https://docs.circom.io)
+- [circomlib (Poseidon)](https://github.com/iden3/circomlib)
