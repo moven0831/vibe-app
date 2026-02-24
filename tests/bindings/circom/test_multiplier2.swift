@@ -2,21 +2,18 @@ import Foundation
 import vibe_app
 
 do {
-    let zkeyPath = "../../../test-vectors/circom/multiplier2_final.zkey"
+    let zkeyPath = "../../../test-vectors/circom/hashpreimage_final.zkey"
 
-    // Prepare inputs
+    // Prepare inputs: Poseidon(12345)
     var inputs = [String: [String]]()
-    let a = 3
-    let b = 5
-    let c = a * b
-    inputs["a"] = [String(a)]
-    inputs["b"] = [String(b)]
+    inputs["secret"] = ["12345"]
+    inputs["challengeHash"] = ["4267533774488295900887461483015112262021273608761099826938271132511348470966"]
     let input_str: String = (try? JSONSerialization.data(withJSONObject: inputs, options: .prettyPrinted)).flatMap {
         String(data: $0, encoding: .utf8)
     } ?? ""
 
-    // Expected outputs
-    let outputs: [String] = [String(c), String(a)]
+    // Expected outputs: just the challengeHash
+    let outputs: [String] = ["4267533774488295900887461483015112262021273608761099826938271132511348470966"]
 
     // Generate Proof
     let generateProofResult = try generateCircomProof(

@@ -37,9 +37,8 @@ mod uniffi_tests {
 
 
 // CIRCOM_TEMPLATE
-// --- Circom Example of using groth16 proving and verifying circuits ---
+// --- Circom: Poseidon hash preimage proof ---
 
-// Module containing the Circom circuit logic (Multiplier2)
 #[macro_use]
 mod circom;
 pub use circom::{
@@ -47,22 +46,23 @@ pub use circom::{
 };
 
 mod witness {
-    rust_witness::witness!(multiplier2);
+    rust_witness::witness!(hashpreimage);
 }
 
 crate::set_circom_circuits! {
-    ("multiplier2_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::multiplier2_witness)),
+    ("hashpreimage_final.zkey", circom_prover::witness::WitnessFn::RustWitness(witness::hashpreimage_witness)),
 }
 
 #[cfg(test)]
 mod circom_tests {
     use crate::circom::{generate_circom_proof, verify_circom_proof, ProofLib};
 
-    const ZKEY_PATH: &str = "./test-vectors/circom/multiplier2_final.zkey";
+    const ZKEY_PATH: &str = "./test-vectors/circom/hashpreimage_final.zkey";
 
     #[test]
-    fn test_multiplier2() {
-        let circuit_inputs = "{\"a\": 2, \"b\": 3}".to_string();
+    fn test_hash_preimage() {
+        // Poseidon(12345) = 4267533774488295900887461483015112262021273608761099826938271132511348470966
+        let circuit_inputs = r#"{"secret":["12345"],"challengeHash":["4267533774488295900887461483015112262021273608761099826938271132511348470966"]}"#.to_string();
         let result =
             generate_circom_proof(ZKEY_PATH.to_string(), circuit_inputs, ProofLib::Arkworks);
         assert!(result.is_ok());

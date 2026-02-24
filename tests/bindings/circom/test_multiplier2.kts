@@ -1,9 +1,9 @@
 import uniffi.vibe_app.*
 
 try {
-    var zkeyPath = "./test-vectors/circom/multiplier2_final.zkey"
+    var zkeyPath = "./test-vectors/circom/hashpreimage_final.zkey"
 
-    val input_str: String = "{\"b\":[\"5\"],\"a\":[\"3\"]}"
+    val input_str: String = "{\"secret\":[\"12345\"],\"challengeHash\":[\"4267533774488295900887461483015112262021273608761099826938271132511348470966\"]}"
 
     // Generate proof
     var generateProofResult = generateCircomProof(zkeyPath, input_str, ProofLib.ARKWORKS)
